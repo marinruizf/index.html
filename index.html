@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESL Reading Comprehension Quiz</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #f0f4f8;
+            --text-color: #333;
+            --container-bg: #ffffff;
+            --passage-bg: #e8f4fd;
+            --passage-border: #3498db;
+            --option-bg: #ecf0f1;
+            --option-hover-bg: #d5dbdb;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--background-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .container {
+            background-color: var(--container-bg);
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: var(--primary-color);
+        }
+        #level-selection, #passage, #question-container {
+            margin-bottom: 20px;
+        }
+        #passage {
+            background-color: var(--passage-bg);
+            border-left: 5px solid var(--passage-border);
+            padding: 20px;
+            border-radius: 4px;
+        }
+        #options button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: var(--option-bg);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            color: var(--text-color);
+        }
+        #options button:hover, #options button:focus {
+            background-color: var(--option-hover-bg);
+            transform: translateY(-2px);
+        }
+        #timer, #question-timer {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #e74c3c;
+            margin-bottom: 10px;
+        }
+        #feedback {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        #start-quiz, #next-question {
+            padding: 10px 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        #start-quiz:hover, #next-question:hover {
+            background-color: #27ae60;
+        }
+        #progress-bar {
+            width: 100%;
+            background-color: var(--option-bg);
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        #progress {
+            width: 0%;
+            height: 10px;
+            background-color: var(--primary-color);
+            border-radius: 4px;
+            transition: width 0.5s ease-in-out;
+        }
+        #score, #difficulty {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        select, button {
+            font-size: 1em;
+        }
+        #dark-mode-toggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            background-color: #34495e;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .dark-mode {
+            --background-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --container-bg: #34495e;
+            --passage-bg: #2c3e50;
+            --passage-border: #3498db;
+            --option-bg: #2c3e50;
+            --option-hover-bg: #3c546d;
+        }
+    </style>
+</head>
+<body>
+    <button id="dark-mode-toggle">Toggle Dark Mode</button>
+    <div class="container">
+        <h1>ESL Reading Comprehension Quiz</h1>
+        <div id="level-selection">
+            <h2>Select your English level:</h2>
+            <select id="level">
+                <option value="A1">A1 (Beginner)</option>
+                <option value="A2">A2 (Elementary)</option>
+                <option value="B1">B1 (Intermediate)</option>
+                <option value="B2">B2 (Upper Intermediate)</option>
+                <option value="C1">C1 (Advanced)</option>
+                <option value="C2">C2 (Proficiency)</option>
+            </select>
+            <button id="start-quiz">Start Quiz</button>
+        </div>
+        <div id="quiz-content" style="display: none;">
+            <div id="timer"></div>
+            <div id="question-timer"></div>
+            <div id="progress-bar"><div id="progress"></div></div>
+            <div id="score"></div>
+            <div id="difficulty"></div>
+            <div id="passage"></div>
+            <div id="question-container">
+                <h2>Question:</h2>
+                <p id="question"></p>
+                <div id="options"></div>
+                <div id="feedback" style="display: none;"></div>
+            </div>
+            <button id="next-question" style="display: none;">Next Question</button>
+        </div>
+    </div>
+
+    <script>
+        console.log("Script started");
+
+        const quizzes = {
+            A1: [
+                {
+                    passage: "My name is John. I am 25 years old. I live in New York City. I work as an English teacher at a local school. I teach children between 8 and 12 years old. I really enjoy my job because I love working with kids. Every morning, I wake up at 6:30 AM and have breakfast. Then, I take the subway to work. My classes start at 8:30 AM and finish at 3:30 PM. After work, I often go to the gym or meet friends. On weekends, I like to explore the city, visit museums, or relax in Central Park. I also enjoy reading books and watching movies in my free time. New York is a busy city, but I love living here because there's always something exciting to do.",
+                    questions: [
+                        {
+                            text: "How old is John?",
+                            options: ["20 years old", "25 years old", "30 years old", "35 years old"],
+                            correctAnswer: "25 years old"
+                        },
+                        {
+                            text: "Where does John live?",
+                            options: ["London", "Paris", "New York City", "Tokyo"],
+                            correctAnswer: "New York City"
+                        },
+                        {
+                            text: "What is John's job?",
+                            options: ["Doctor", "English teacher", "Bus driver", "Chef"],
+                            correctAnswer: "English teacher"
+                        },
+                        {
+                            text: "What time do John's classes start?",
+                            options: ["7:30 AM", "8:00 AM", "8:30 AM", "9:00 AM"],
+                            correctAnswer: "8:30 AM"
+                        },
+                        {
+                            text: "What does John like to do on weekends?",
+                            options: ["Stay at home", "Go to work", "Explore the city", "Visit family"],
+                            correctAnswer: "Explore the city"
+                        }
+                    ]
+                }
+            ],
+            A2: [
+                {
+                    passage: "Sarah works at a small café in the city center. She starts work early in the morning, at 6 AM. She prepares coffee and sets out fresh pastries for the morning customers. Many people come to the café before going to work. They buy coffee and sometimes a quick breakfast. Sarah enjoys talking to the regular customers and making their favorite drinks. In the afternoon, the café is quieter, and Sarah can take a short break. She usually finishes work at 2 PM. After work, she likes to go for a walk in the park or meet her friends. Sarah enjoys her job because she likes working with people and the busy atmosphere of the café.",
+                    questions: [
+                        {
+                            text: "Where does Sarah work?",
+                            options: ["In a school", "At a small café", "In an office", "At a restaurant"],
+                            correctAnswer: "At a small café"
+                        },
+                        {
+                            text: "What time does Sarah start work?",
+                            options: ["5 AM", "6 AM", "7 AM", "8 AM"],
+                            correctAnswer: "6 AM"
+                        },
+                        {
+                            text: "What does Sarah do in the morning?",
+                            options: ["Clean the café", "Cook lunch", "Prepare coffee and pastries", "Take orders"],
+                            correctAnswer: "Prepare coffee and pastries"
+                        },
+                        {
+                            text: "When is the café quieter?",
+                            options: ["In the morning", "At lunchtime", "In the afternoon", "In the evening"],
+                            correctAnswer: "In the afternoon"
+                        },
+                        {
+                            text: "Why does Sarah enjoy her job?",
+                            options: ["She earns a lot of money", "She likes working with people", "She can sleep late", "She gets free food"],
+                            correctAnswer: "She likes working with people"
+                        }
+                    ]
+                }
+            ],
+            B1: [
+                {
+                    passage: "The rise of social media has dramatically changed how people communicate and share information. Platforms like Facebook, Twitter, and Instagram have become an integral part of many people's daily lives. These sites allow users to connect with friends and family, share photos and videos, and stay updated on current events. While social media has many benefits, such as facilitating global communication and providing a platform for self-expression, it also has drawbacks. Some critics argue that excessive use of social media can lead to decreased face-to-face interaction, privacy concerns, and the spread of misinformation. Despite these challenges, social media continues to evolve and shape modern society in significant ways.",
+                    questions: [
+                        {
+                            text: "What has social media changed significantly?",
+                            options: ["How people eat", "How people communicate", "How people travel", "How people work"],
+                            correctAnswer: "How people communicate"
+                        },
+                        {
+                            text: "Which of the following is NOT mentioned as a social media platform in the passage?",
+                            options: ["Facebook", "Twitter", "Instagram", "LinkedIn"],
+                            correctAnswer: "LinkedIn"
+                        },
+                        {
+                            text: "What is one benefit of social media mentioned in the passage?",
+                            options: ["Improving sleep habits", "Facilitating global communication", "Increasing privacy", "Reducing screen time"],
+                            correctAnswer: "Facilitating global communication"
+                        },
+                        {
+                            text: "According to the passage, what is a potential drawback of excessive social media use?",
+                            options: ["Increased face-to-face interaction", "Higher education costs", "Spread of misinformation", "Improved mental health"],
+                            correctAnswer: "Spread of misinformation"
+                        },
+                        {
+                            text: "How does the passage describe the overall impact of social media on modern society?",
+                            options: ["It has no significant impact", "It is entirely negative", "It is entirely positive", "It continues to shape society in significant ways"],
+                            correctAnswer: "It continues to shape society in significant ways"
+                        }
+                    ]
+                }
+            ],
+            B2: [
+                {
+                    passage: "Climate change is one of the most pressing issues facing our planet today. The Earth's average temperature has been rising at an unprecedented rate, largely due to human activities such as burning fossil fuels and deforestation. This global warming trend has far-reaching consequences, including more frequent and severe weather events, rising sea levels, and disruptions to ecosystems. Many species of plants and animals are struggling to adapt to these rapid changes, leading to biodiversity loss. To address this crisis, countries around the world are working to reduce greenhouse gas emissions and transition to renewable energy sources. However, many experts argue that current efforts are not sufficient and that more drastic action is needed to mitigate the worst effects of climate change. As individuals, we can also contribute by making environmentally conscious choices in our daily lives, such as reducing energy consumption and supporting sustainable practices.",
+                    questions: [
+                        {
+                            text: "What is the main cause of the Earth's rising average temperature, according to the passage?",
+                            options: ["Natural climate cycles", "Solar radiation", "Human activities", "Volcanic eruptions"],
+                            correctAnswer: "Human activities"
+                        },
+                        {
+                            text: "Which of the following is NOT mentioned as a consequence of global warming in the passage?",
+                            options: ["More frequent weather events", "Rising sea levels", "Increased agricultural productivity", "Disruptions to ecosystems"],
+                            correctAnswer: "Increased agricultural productivity"
+                        },
+                        {
+                            text: "What are countries doing to address climate change?",
+                            options: ["Increasing fossil fuel production", "Reducing greenhouse gas emissions", "Promoting deforestation", "Discouraging renewable energy use"],
+                            correctAnswer: "Reducing greenhouse gas emissions"
+                        },
+                        {
+                            text: "According to the passage, how do many experts view current efforts to combat climate change?",
+                            options: ["They are excessive", "They are sufficient", "They are not sufficient", "They are unnecessary"],
+                            correctAnswer: "They are not sufficient"
+                        },
+                        {
+                            text: "What does the passage suggest individuals can do to help address climate change?",
+                            options: ["Increase energy consumption", "Ignore the issue", "Make environmentally conscious choices", "Promote fossil fuel use"],
+                            correctAnswer: "Make environmentally conscious choices"
+                        }
+                    ]
+                }
+            ],
+            C1: [
+                {
+                    passage: "The concept of artificial intelligence (AI) has captivated human imagination for decades, but recent advancements in machine learning and neural networks have brought us closer than ever to creating truly intelligent machines. AI systems are now capable of performing complex tasks that once seemed the exclusive domain of human cognition, such as natural language processing, image recognition, and even creative endeavors like composing music or generating art. While these developments offer immense potential for improving efficiency and solving complex problems across various fields, they also raise profound ethical and philosophical questions. As AI becomes more sophisticated, concerns about job displacement, privacy, and the potential for AI to surpass human intelligence (a concept known as 'singularity') have become increasingly prominent in public discourse. Proponents of AI argue that these technologies will ultimately benefit humanity by augmenting our capabilities and freeing us from mundane tasks, allowing for greater focus on creativity and innovation. Critics, however, warn of the potential for AI to exacerbate existing social inequalities and the risk of losing control over increasingly autonomous systems. As we continue to push the boundaries of what's possible with AI, it's crucial that we also engage in thoughtful consideration of its implications and work towards developing robust ethical frameworks to guide its development and implementation.",
+                    questions: [
+                        {
+                            text: "What recent advancements have brought us closer to creating truly intelligent machines?",
+                            options: ["Improvements in computer hardware", "Advancements in machine learning and neural networks", "Development of new programming languages", "Breakthroughs in quantum computing"],
+                            correctAnswer: "Advancements in machine learning and neural networks"
+                        },
+                        {
+                            text: "Which of the following is NOT mentioned as a capability of modern AI systems?",
+                            options: ["Natural language processing", "Image recognition", "Composing music", "Time travel"],
+                            correctAnswer: "Time travel"
+                        },
+                        {
+                            text: "What concept refers to the potential for AI to surpass human intelligence?",
+                            options: ["Singularity", "Transcendence", "Ascendance", "Convergence"],
+                            correctAnswer: "Singularity"
+                        },
+                        {
+                            text: "According to the passage, what do proponents of AI argue?",
+                            options: ["AI will replace all human jobs", "AI will solve all of humanity's problems", "AI will augment human capabilities and free us from mundane tasks", "AI will eliminate the need for human creativity"],
+                            correctAnswer: "AI will augment human capabilities and free us from mundane tasks"
+                        },
+                        {
+                            text: "What does the passage suggest is crucial as we continue to develop AI?",
+                            options: ["Focusing solely on technological advancements", "Ignoring ethical concerns", "Developing robust ethical frameworks", "Limiting AI research"],
+                            correctAnswer: "Developing robust ethical frameworks"
+                        }
+                    ]
+                }
+            ],
+            C2: [
+                {
+                    passage: "The intersection of neuroscience and philosophy has given rise to profound questions about the nature of consciousness, free will, and the self. As our understanding of the brain's intricate mechanisms deepens, we are confronted with the challenge of reconciling scientific observations with our subjective experiences and long-held beliefs about human agency. The reductionist approach in neuroscience, which seeks to explain consciousness as an emergent property of neural activity, has led some philosophers to embrace a materialist view of the mind. This perspective posits that all mental states and processes can ultimately be explained by physical processes in the brain. However, this view is not without its critics, who argue that such reductionism fails to account for the qualitative aspects of conscious experience, often referred to as qualia. The hard problem of consciousness, as formulated by philosopher David Chalmers, asks why we have subjective, first-person experiences at all, and how these arise from physical processes. This question has proven particularly resistant to scientific inquiry, leading some thinkers to propose alternative frameworks, such as panpsychism, which suggests that consciousness might be a fundamental property of the universe, present in varying degrees in all matter. The debate surrounding free will has also been significantly impacted by neuroscientific findings. Studies suggesting that our brains make decisions before we become consciously aware of them have led some to question the very existence of free will, while others argue for a compatibilist view that reconciles determinism with moral responsibility. As we continue to unravel the mysteries of the brain, the dialogue between neuroscience and philosophy promises to yield new insights into the nature of human experience and our place in the universe, challenging us to reconsider our most fundamental assumptions about what it means to be conscious and self-aware entities.",
+                    questions: [
+                        {
+                            text: "What approach in neuroscience seeks to explain consciousness as an emergent property of neural activity?",
+                            options: ["Holistic approach", "Reductionist approach", "Dualist approach", "Vitalist approach"],
+                            correctAnswer: "Reductionist approach"
+                        },
+                        {
+                            text: "What term is used to describe the qualitative aspects of conscious experience?",
+                            options: ["Quanta", "Qualia", "Quantum", "Quorum"],
+                            correctAnswer: "Qualia"
+                        },
+                        {
+                            text: "Who formulated the 'hard problem of consciousness'?",
+                            options: ["David Chalmers", "Daniel Dennett", "John Searle", "Thomas Nagel"],
+                            correctAnswer: "David Chalmers"
+                        },
+                        {
+                            text: "Which philosophical perspective suggests that consciousness might be a fundamental property of the universe?",
+                            options: ["Materialism", "Dualism", "Panpsychism", "Epiphenomenalism"],
+                            correctAnswer: "Panpsychism"
+                        },
+                        {
+                            text: "What view attempts to reconcile determinism with moral responsibility in the free will debate?",
+                            options: ["Libertarianism", "Hard determinism", "Compatibilism", "Indeterminism"],
+                            correctAnswer: "Compatibilism"
+                        }
+                    ]
+                }
+            ]
+        };
+
+        console.log("Quizzes object defined");
+
+        let currentLevel;
+        let currentQuestionIndex = 0;
+        let timeLeft = 300; // 5 minutes for reading
+        let timerInterval;
+        let score = 0;
+        let questionTimer;
+        let questionTimeLeft = 30; // 30 seconds per question
+
+        function startQuiz() {
+            console.log("startQuiz function called");
+            currentLevel = document.getElementById('level').value;
+            console.log("Selected level:", currentLevel);
+            document.getElementById('level-selection').style.display = 'none';
+            document.getElementById('quiz-content').style.display = 'block';
+            score = 0;
+            currentQuestionIndex = 0;
+            timeLeft = 300;
+            displayPassage();
+            startTimer();
+            updateProgress();
+            updateScore();
+            updateDifficulty();
+            startQuestionTimer();
+        }
+
+        function displayPassage() {
+            const currentQuiz = quizzes[currentLevel][0];
+            document.getElementById('passage').innerHTML = `<h2>Passage:</h2><p>${currentQuiz.passage}</p>`;
+            document.getElementById('timer').textContent = `Time left: ${timeLeft}s`;
+            document.getElementById('question-container').style.display = 'block';
+            displayQuestion();
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('timer').textContent = `Time left: ${timeLeft}s`;
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert('Time\'s up!');
+                    // Handle end of quiz here
+                }
+            }, 1000);
+        }
+
+        function displayQuestion() {
+            const currentQuiz = quizzes[currentLevel][0];
+            const question = currentQuiz.questions[currentQuestionIndex];
+            document.getElementById('question').textContent = `Question ${currentQuestionIndex + 1} of 5: ${question.text}`;
+            const optionsContainer = document.getElementById('options');
+            optionsContainer.innerHTML = '';
+            question.options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.onclick = () => checkAnswer(option, question.correctAnswer);
+                optionsContainer.appendChild(button);
+            });
+            document.getElementById('question-container').classList.add('fade-in');
+            document.getElementById('next-question').style.display = 'none';
+            document.getElementById('feedback').style.display = 'none'; // Hide feedback
+            updateProgress();
+            resetQuestionTimer();
+        }
+
+        function checkAnswer(selectedAnswer, correctAnswer) {
+            clearInterval(questionTimer);
+            const feedbackElement = document.getElementById('feedback');
+            if (selectedAnswer === correctAnswer) {
+                feedbackElement.textContent = 'Correct!';
+                feedbackElement.style.color = 'green';
+                score++;
+                updateScore();
+            } else {
+                feedbackElement.textContent = `Incorrect. The correct answer is: ${correctAnswer}`;
+                feedbackElement.style.color = 'red';
+            }
+            feedbackElement.style.display = 'block';
+            document.getElementById('next-question').style.display = 'block';
+            disableOptions();
+        }
+
+        function disableOptions() {
+            const options = document.querySelectorAll('#options button');
+            options.forEach(option => option.disabled = true);
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestionIndex + 1) / quizzes[currentLevel][0].questions.length) * 100;
+            document.getElementById('progress').style.width = `${progress}%`;
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = `Score: ${score}/${quizzes[currentLevel][0].questions.length}`;
+        }
+
+        function updateDifficulty() {
+            document.getElementById('difficulty').textContent = `Difficulty: ${currentLevel}`;
+        }
+
+        function startQuestionTimer() {
+            questionTimeLeft = 30;
+            updateQuestionTimer();
+            questionTimer = setInterval(() => {
+                questionTimeLeft--;
+                updateQuestionTimer();
+                if (questionTimeLeft <= 0) {
+                    clearInterval(questionTimer);
+                    checkAnswer('', quizzes[currentLevel][0].questions[currentQuestionIndex].correctAnswer);
+                }
+            }, 1000);
+        }
+
+        function resetQuestionTimer() {
+            clearInterval(questionTimer);
+            startQuestionTimer();
+        }
+
+        function updateQuestionTimer() {
+            document.getElementById('question-timer').textContent = `Time left for question: ${questionTimeLeft}s`;
+        }
+
+        function showQuizSummary() {
+            clearInterval(timerInterval);
+            clearInterval(questionTimer);
+            const quizContent = document.getElementById('quiz-content');
+            quizContent.innerHTML = `
+                <h2>Quiz Completed!</h2>
+                <p>Your final score: ${score}/${quizzes[currentLevel][0].questions.length}</p>
+                <p>Time taken: ${300 - timeLeft} seconds</p>
+                <h3>Review:</h3>
+                <div id="review"></div>
+                <button onclick="location.reload()">Restart Quiz</button>
+            `;
+            showReview();
+        }
+
+        function showReview() {
+            const reviewElement = document.getElementById('review');
+            quizzes[currentLevel][0].questions.forEach((question, index) => {
+                reviewElement.innerHTML += `
+                    <p><strong>Question ${index + 1}:</strong> ${question.text}</p>
+                    <p>Correct Answer: ${question.correctAnswer}</p>
+                    <hr>
+                `;
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key >= '1' && e.key <= '4') {
+                const options = document.querySelectorAll('#options button');
+                if (options.length >= e.key) {
+                    options[e.key - 1].click();
+                }
+            }
+        });
+
+        document.getElementById('dark-mode-toggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+        });
+
+        console.log("Functions defined");
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOMContentLoaded event fired");
+            document.getElementById('start-quiz').addEventListener('click', startQuiz);
+            document.getElementById('next-question').addEventListener('click', () => {
+                currentQuestionIndex++;
+                if (currentQuestionIndex < quizzes[currentLevel][0].questions.length) {
+                    displayQuestion();
+                } else {
+                    showQuizSummary();
+                }
+            });
+            document.getElementById('dark-mode-toggle').addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+            });
+        });
+
+        console.log("Script ended");
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
